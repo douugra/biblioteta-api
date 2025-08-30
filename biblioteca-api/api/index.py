@@ -1,11 +1,13 @@
 import sqlite3
 from flask_cors import CORS
 from flask import Flask, jsonify, request, g
+import os
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})  # libera acesso para qualquer front
 
-DATABASE = "biblioteca.db"
+# Usar /tmp para o SQLite na Vercel
+DATABASE = "/tmp/biblioteca.db"
 
 # ---------- Conexão com Banco ----------
 def get_db():
@@ -23,6 +25,7 @@ def close_connection(exception):
 
 # ---------- Inicialização do banco ----------
 def init_db():
+    os.makedirs("/tmp", exist_ok=True)  # garante que a pasta existe
     with app.app_context():
         db = get_db()
         db.execute("""
