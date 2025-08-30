@@ -1,8 +1,9 @@
 import sqlite3
 from flask import Flask, jsonify, request, g
-
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app, origins=["*"])  # Permite qualquer origem (você pode limitar depois)
 DATABASE = "biblioteca.db"
 
 # ---------- Conexão com Banco ----------
@@ -32,27 +33,6 @@ def init_db():
         db.commit()
 
 # ---------- Rotas ----------
-@app.route("/")
-def home():
-    return """
-    <html>
-        <head>
-            <title>📚 Biblioteca API</title>
-            <style>
-                body { font-family: Arial, sans-serif; text-align: center; background: #f4f4f9; color: #333; }
-                h1 { color: #4CAF50; margin-top: 50px; }
-                p { font-size: 18px; }
-                a { color: #4CAF50; text-decoration: none; font-weight: bold; }
-                a:hover { text-decoration: underline; }
-            </style>
-        </head>
-        <body>
-            <h1>📚 Bem-vindo à Biblioteca API</h1>
-            <p>Use <a href="/api/livros">/api/livros</a> para ver os livros disponíveis.</p>
-        </body>
-    </html>
-    """
-
 @app.route("/api/livros", methods=["GET"])
 def get_livros():
     db = get_db()
@@ -79,20 +59,6 @@ def add_livro():
     novo["id"] = cursor.lastrowid
     return jsonify(novo), 201
 
-@app.route("/api/livros/<int:livro_id>", methods=["PUT"])
-def update_livro(livro_id):
-    dados = request.json
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT * FROM livros WHERE id=?", (livro_id,))
-    if not cursor.fetchone():
-        return jsonify({"erro": "Livro não encontrado"}), 404
-
-    cursor.execute("UPDATE livros SET titulo=?, autor=? WHERE id=?", 
-                   (dados.get("titulo"), dados.get("autor"), livro_id))
-    db.commit()
-    return jsonify({"id": livro_id, "titulo": dados.get("titulo"), "autor": dados.get("autor")})
-
 @app.route("/api/livros/<int:livro_id>", methods=["DELETE"])
 def delete_livro(livro_id):
     db = get_db()
@@ -105,4 +71,4 @@ def delete_livro(livro_id):
 
 if __name__ == "__main__":
     init_db()
-    app.run()
+    app.run(host="0.0.0.0", port=5000)
