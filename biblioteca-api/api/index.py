@@ -21,6 +21,7 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
+# ---------- Inicialização do banco ----------
 def init_db():
     with app.app_context():
         db = get_db()
@@ -71,41 +72,68 @@ def get_livro(livro_id):
 
 @app.route("/api/livros", methods=["POST"])
 def add_livro():
-    novo = request.json
+    if not request.is_json:
+        return jsonify({"erro": "Requisição precisa ser JSON"}), 400
+
+    novo = request.get_json()
     if not novo.get("titulo") or not novo.get("autor"):
         return jsonify({"erro": "Título e autor são obrigatórios"}), 400
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("INSERT INTO livros (titulo, autor) VALUES (?, ?)", (novo["titulo"], novo["autor"]))
-    db.commit()
-    novo["id"] = cursor.lastrowid
-    return jsonify(novo), 201
+
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO livros (titulo, autor) VALUES (?, ?)",
+            (novo["titulo"], novo["autor"])
+        )
+        db.commit()
+        novo["id"] = cursor.lastrowid
+        return jsonify(novo), 201
+    except Exception as e:
+        print("Erro interno:", e)
+        return jsonify({"erro": "Erro interno no servidor"}), 500
 
 @app.route("/api/livros/<int:livro_id>", methods=["PUT"])
 def update_livro(livro_id):
-    dados = request.json
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT * FROM livros WHERE id=?", (livro_id,))
-    if not cursor.fetchone():
-        return jsonify({"erro": "Livro não encontrado"}), 404
+    if not request.is_json:
+        return jsonify({"erro": "Requisição precisa ser JSON"}), 400
 
-    cursor.execute("UPDATE livros SET titulo=?, autor=? WHERE id=?", 
-                   (dados.get("titulo"), dados.get("autor"), livro_id))
-    db.commit()
-    return jsonify({"id": livro_id, "titulo": dados.get("titulo"), "autor": dados.get("autor")})
+    dados = request.get_json()
+    if not dados.get("titulo") or not dados.get("autor"):
+        return jsonify({"erro": "Título e autor são obrigatórios"}), 400
+
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM livros WHERE id=?", (livro_id,))
+        if not cursor.fetchone():
+            return jsonify({"erro": "Livro não encontrado"}), 404
+
+        cursor.execute(
+            "UPDATE livros SET titulo=?, autor=? WHERE id=?",
+            (dados["titulo"], dados["autor"], livro_id)
+        )
+        db.commit()
+        return jsonify({"id": livro_id, "titulo": dados["titulo"], "autor": dados["autor"]})
+    except Exception as e:
+        print("Erro interno:", e)
+        return jsonify({"erro": "Erro interno no servidor"}), 500
 
 @app.route("/api/livros/<int:livro_id>", methods=["DELETE"])
 def delete_livro(livro_id):
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("DELETE FROM livros WHERE id=?", (livro_id,))
-    db.commit()
-    if cursor.rowcount == 0:
-        return jsonify({"erro": "Livro não encontrado"}), 404
-    return jsonify({"msg": f"Livro {livro_id} removido com sucesso"})
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("DELETE FROM livros WHERE id=?", (livro_id,))
+        db.commit()
+        if cursor.rowcount == 0:
+            return jsonify({"erro": "Livro não encontrado"}), 404
+        return jsonify({"msg": f"Livro {livro_id} removido com sucesso"})
+    except Exception as e:
+        print("Erro interno:", e)
+        return jsonify({"erro": "Erro interno no servidor"}), 500
 
-# ---------- Inicialização do banco na Vercel ----------
+# ---------- Inicializa banco ----------
 with app.app_context():
     init_db()
 
