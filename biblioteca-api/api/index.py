@@ -3,7 +3,7 @@ from flask_cors import CORS
 from flask import Flask, jsonify, request, g
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})  # libera acesso a todas origens
 DATABASE = "biblioteca.db"
 
 # ---------- Conexão com Banco ----------
