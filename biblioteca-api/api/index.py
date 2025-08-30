@@ -3,7 +3,8 @@ from flask_cors import CORS
 from flask import Flask, jsonify, request, g
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})  # libera acesso a todas origens
+CORS(app, resources={r"/api/*": {"origins": "*"}})  # libera acesso para qualquer front
+
 DATABASE = "biblioteca.db"
 
 # ---------- Conexão com Banco ----------
@@ -104,6 +105,9 @@ def delete_livro(livro_id):
         return jsonify({"erro": "Livro não encontrado"}), 404
     return jsonify({"msg": f"Livro {livro_id} removido com sucesso"})
 
-if __name__ == "__main__":
+# ---------- Inicialização do banco na Vercel ----------
+with app.app_context():
     init_db()
+
+if __name__ == "__main__":
     app.run()
